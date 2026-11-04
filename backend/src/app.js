@@ -11,6 +11,8 @@
 // usando multer com diskStorage. Não utilize provedores externos.
 
 const express = require('express');
+const multer = require('multer');
+const documentsRoutes = require('./routes/documents.routes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -21,6 +23,43 @@ app.use(express.json());
 // /documents/:id/download) serão implementadas durante o Passo 2.
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
+});
+
+app.use('/', documentsRoutes);
+
+app.use((error, req, res, next) => {
+  if (res.headersSent) {
+    return next(error);
+  }
+
+  if (error instanceof multer.MulterError) {
+    const tooLarge = error.code === 'LIMIT_FILE_SIZE';
+    return res.status(tooLarge ? 413 : 400).json({
+      error: {
+        code: tooLarge ? 'FILE_TOO_LARGE' : 'INVALID_REQUEST',
+        message: tooLarge
+          ? 'O arquivo excede o tamanho maximo permitido.'
+          : 'A requisicao de upload e invalida.',
+      },
+    });
+  }
+
+  if (error.code === 'DOCUMENT_NOT_FOUND') {
+    return res.status(404).json({
+      error: {
+        code: 'DOCUMENT_NOT_FOUND',
+        message: 'Documento nao encontrado.',
+      },
+    });
+  }
+
+  console.error('Erro inesperado na API de documentos:', error);
+  return res.status(500).json({
+    error: {
+      code: 'INTERNAL_ERROR',
+      message: 'Ocorreu um erro interno.',
+    },
+  });
 });
 
 if (require.main === module) {
