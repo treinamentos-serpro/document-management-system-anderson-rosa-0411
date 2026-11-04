@@ -2,6 +2,7 @@ const crypto = require('node:crypto');
 const express = require('express');
 const multer = require('multer');
 const storageConfig = require('../storage.config');
+const authenticate = require('../middlewares/authentication.middleware');
 const documentController = require('../controllers/documents.controller');
 
 const router = express.Router();
@@ -31,14 +32,14 @@ const upload = multer({
 
 router.post(
   '/upload',
-  documentController.validateUser,
+  authenticate,
   upload.single('file'),
   documentController.upload,
 );
-router.get('/documents', documentController.validateUser, documentController.list);
+router.get('/documents', authenticate, documentController.list);
 router.get(
   '/documents/:id/download',
-  documentController.validateUser,
+  authenticate,
   documentController.download,
 );
 

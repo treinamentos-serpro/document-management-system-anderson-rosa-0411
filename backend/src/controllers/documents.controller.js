@@ -1,20 +1,5 @@
 const documentService = require('../services/documents.service');
 
-function validateUser(req, res, next) {
-  const userId = req.get('X-User-Id')?.trim();
-  if (!userId || userId.length > 128) {
-    return res.status(400).json({
-      error: {
-        code: 'INVALID_REQUEST',
-        message: 'Informe um X-User-Id valido.',
-      },
-    });
-  }
-
-  req.userId = userId;
-  return next();
-}
-
 function upload(req, res) {
   if (!req.file) {
     return res.status(400).json({
@@ -25,20 +10,20 @@ function upload(req, res) {
     });
   }
 
-  const document = documentService.uploadDocument(req.file, req.userId);
+  const document = documentService.uploadDocument(req.file, req.auth.userId);
   return res.status(201).json(document);
 }
 
 function list(req, res) {
   return res.status(200).json({
-    documents: documentService.listDocuments(req.userId),
+    documents: documentService.listDocuments(req.auth.userId),
   });
 }
 
 async function download(req, res, next) {
   const { document, stream } = await documentService.getDocumentDownload(
     req.params.id,
-    req.userId,
+    req.auth.userId,
   );
 
   stream.on('error', next);
@@ -48,7 +33,6 @@ async function download(req, res, next) {
 }
 
 module.exports = {
-  validateUser,
   upload,
   list,
   download,
